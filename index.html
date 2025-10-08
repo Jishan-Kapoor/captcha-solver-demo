@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Captcha Solver</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked@3.0.2/marked.min.js"></script>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1>Captcha Solver</h1>
+        <p>Captcha URL: <span id="captchaUrl"></span></p>
+        <p>Solved Captcha: <span id="solvedCaptcha"></span></p>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const captchaUrlParam = urlParams.get('url');
+        const captchaUrlElement = document.getElementById('captchaUrl');
+        const solvedCaptchaElement = document.getElementById('solvedCaptcha');
+
+        captchaUrlElement.textContent = captchaUrlParam;
+
+        const solveCaptcha = async () => {
+            const response = await fetch(captchaUrlParam);
+            const blob = await response.blob();
+            const captchaImage = URL.createObjectURL(blob);
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                let solvedCaptcha = '';
+
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    const brightness = imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2];
+
+                    solvedCaptcha += String.fromCharCode(brightness % 26 + 65);
+
+                    // Break out of loop if solved captcha is long enough
+                    if (solvedCaptcha.length >= 10) {
+                        break;
+                    }
+                }
+
+                solvedCaptchaElement.textContent = solvedCaptcha;
+            };
+
+            img.src = captchaImage;
+        };
+
+        solveCaptcha();
+
+        setTimeout(() => {
+            solveCaptcha();
+        }, 15000);
+    </script>
+
+</body>
+
+</html>
